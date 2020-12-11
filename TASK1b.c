@@ -2,11 +2,6 @@
 // Created by Yizirui Fang on 2020/12/11.
 //
 
-//
-// Created by Yizirui Fang on 2020/12/10.
-//
-
-
 #include "coursework.h"
 #include "linkedlist.h"
 #include <stdio.h>
@@ -15,11 +10,6 @@
 typedef struct process processChara;
 typedef struct element processNode;
 
-//make a new structure as the node of the list
-//or store the time in the 2 new lists
-//typedef struct {
-//    processChara
-//};
 
 #define processData(processNode) ((processChara *) processNode->pData)
 
@@ -71,10 +61,6 @@ int main(int argc, char const *argv[]) {
         int sizeOfWorkingQueue = 0;
         processNode *currentNode = workingQueueHead;
         while (currentNode != NULL) {
-//            completedProcess = 0;
-//            sizeOfWorkingQueue = 0;
-//            printf("\n%d Created Time %d\n", processData(currentNode)->iRemainingBurstTime,
-//                   processData(currentNode)->oTimeCreated);
             if (!isProcessCompleted(currentNode)) {
                 struct timeval onProcessStart;
                 struct timeval onProcessEnd;
@@ -88,14 +74,11 @@ int main(int argc, char const *argv[]) {
                     }
                 } else {
                     runPreemptiveJob(processData(currentNode), &onProcessStart, &onProcessEnd);
-//                    addLast((void *) getDifferenceInMilliSeconds(createdTime(currentNode), *onProcessStart),
-//                            (struct element **) responseTimeHead, (struct element **) responseTimeHead);
                     if (isProcessCompleted(currentNode)) {
                         printCompeteProcessInSingleSlide(currentNode, &totalResponseTime, &totalTurnaroundTime,
                                                          onProcessStart, outFile);
                         completedProcess++;
                     } else {
-//                        printf("before start time %d\n", onProcessStart);
                         printStartedProcess(currentNode, &totalResponseTime, onProcessStart, outFile);
 
                     }
@@ -116,8 +99,8 @@ int main(int argc, char const *argv[]) {
             }
         }
     }
-    fprintf(outFile, "Average response time = %f\n", ((double) totalResponseTime)/NUMBER_OF_PROCESSES);
-    fprintf(outFile, "Average turn around time = %f\n", ((double) totalTurnaroundTime)/NUMBER_OF_PROCESSES);
+    fprintf(outFile, "Average response time = %f\n", ((double) totalResponseTime) / NUMBER_OF_PROCESSES);
+    fprintf(outFile, "Average turn around time = %f\n", ((double) totalTurnaroundTime) / NUMBER_OF_PROCESSES);
     fclose(outFile);
     return 0;
 }
@@ -181,7 +164,6 @@ dispatchSamePriorityProcesses(processNode **readyQueueHead, processNode **readyQ
     while (currentNode != NULL) {
         if (((processChara *) currentNode->pData)->iPriority == currentPriority) {
             addLast(processData(currentNode), workingQueueHead, workingQueueTail);
-//            printf("Id %d\n", processData(currentNode)->iProcessId);
             currentNode = currentNode->pNext;
 
             removeFirst(readyQueueHead, readyQueueTail);
@@ -216,8 +198,8 @@ void printProcessList(processNode *readyQueueHead, processNode *readyQueueTail, 
             currentNode = currentNode->pNext;
         }
     }
-    fprintf(outputFile,"END\n");
-    fprintf(outputFile,"\n");
+    fprintf(outputFile, "END\n");
+    fprintf(outputFile, "\n");
 }
 
 void printCompleteProcess(processNode *currentNode, long int *totalTurnaroundTime, FILE *outputFile) {
@@ -234,13 +216,9 @@ void printCompleteProcess(processNode *currentNode, long int *totalTurnaroundTim
 void printStartedProcess(processNode *currentNode, long int *totalResponseTime, struct timeval onProcessStart,
                          FILE *outputFile) {
     //FIXME: wrong response time, wrong in onProcessStart
-//    printf("in function create %d, start %d\n", processData(currentNode)->oTimeCreated,
-//           onProcessStart);
     long int currentProcessResponseTime = getDifferenceInMilliSeconds(
             processData(currentNode)->oTimeCreated,
             onProcessStart);
-//    printf("response %d, create %d, start %d\n", currentProcessResponseTime, processData(currentNode)->oTimeCreated,
-//           onProcessStart);
     *totalResponseTime += currentProcessResponseTime;
     fprintf(outputFile,
             "Process Id = %d, Priority = %d, Previous Burst Time = %d, Remaining Burst Time = %d, Response Time = %d\n",
