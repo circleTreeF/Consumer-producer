@@ -13,6 +13,8 @@ void swap(processNode *a, processNode *b);
 
 
 int main(int argc, char const *argv[]) {
+
+    FILE *outFile = fopen("TASK1a.txt", "w+");
     processNode *processesHead = NULL;
     processNode *processTail = NULL;
 
@@ -29,12 +31,13 @@ int main(int argc, char const *argv[]) {
         runNonPreemptiveJob((processChara *) currentProcess, &processStartTime, &processEndTime);
         long int processResponseTime = getDifferenceInMilliSeconds(currentProcess->oTimeCreated, processStartTime);
         long int processTurnaroundTime = getDifferenceInMilliSeconds(currentProcess->oTimeCreated, processEndTime);
-        totalResponseTime+=processResponseTime;
-        totalTurnaroundTime+=processTurnaroundTime;
+        totalResponseTime += processResponseTime;
+        totalTurnaroundTime += processTurnaroundTime;
         completedProcess++;
-        printf("Process Id = %d, Previous Burst Time: %d Remaining Burst Time = %d,Response Time = %ld Turnaround Time: %ld\n",
-               currentProcess->iProcessId, currentProcess->iPreviousBurstTime,
-               currentProcess->iRemainingBurstTime, processResponseTime, processTurnaroundTime);
+        fprintf(outFile,
+                "Process Id = %d, Previous Burst Time = %d, Remaining Burst Time = %d, Response Time = %ld, Turnaround Time = %ld\n",
+                currentProcess->iProcessId, currentProcess->iPreviousBurstTime,
+                currentProcess->iRemainingBurstTime, processResponseTime, processTurnaroundTime);
         removeFirst(&processesHead, &processTail);
     }
     //FIXME:the expect: Average response time = 319.100000
@@ -42,8 +45,8 @@ int main(int argc, char const *argv[]) {
     //Actual:
     // Average response time = 319.100006
     //Average turnaround time = 416.600006
-    printf("Average response time = %f\n", ((double) totalResponseTime)/NUMBER_OF_PROCESSES);
-    printf("Average turnaround time = %f\n", ((double) totalTurnaroundTime)/NUMBER_OF_PROCESSES);
+    fprintf(outFile, "Average response time = %f\n", ((double) totalResponseTime) / NUMBER_OF_PROCESSES);
+    fprintf(outFile, "Average turn around time = %f\n", ((double) totalTurnaroundTime) / NUMBER_OF_PROCESSES);
     return 0;
 }
 
