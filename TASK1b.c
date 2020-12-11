@@ -49,7 +49,7 @@ int main(int argc, char const *argv[]) {
     processNode *readyQueueTail = NULL;
     processNode *workingQueueHead = NULL;
     processNode *workingQueueTail = NULL;
-    FILE *outFile = fopen("TASK1bOut.txt", "w+");
+    FILE *outFile = fopen("TASK1b.txt", "w+");
     processGenerator(&readyQueueHead, &readyQueueTail);
     sortProcessesByPriority(&readyQueueHead);
     printProcessList(readyQueueHead, readyQueueTail, outFile);
