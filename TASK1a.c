@@ -47,6 +47,7 @@ int main(int argc, char const *argv[]) {
     //Average turnaround time = 416.600006
     fprintf(outFile, "Average response time = %f\n", ((double) totalResponseTime) / NUMBER_OF_PROCESSES);
     fprintf(outFile, "Average turn around time = %f\n", ((double) totalTurnaroundTime) / NUMBER_OF_PROCESSES);
+    fclose(outFile);
     return 0;
 }
 
