@@ -1,0 +1,1 @@
+/usr/bin/cc -std=c99 -pthread -g   CMakeFiles/cw.dir/coursework.c.o CMakeFiles/cw.dir/linkedlist.c.o CMakeFiles/cw.dir/TASK2aDebug.c.o  -o cw 

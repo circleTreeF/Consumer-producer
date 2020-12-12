@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "type": "shell",
+        "label": "gcc build active file",
+        "command": "/usr/bin/gcc",
+        "args": ["-std=c99 -pthread", "${file}", "coursework.c", "linkedlist.c","-o", "${fileDirname}/${fileBasenameNoExtension}"],
+        "options": {
+          "cwd": "/usr/bin"
+        },
+        "problemMatcher": ["$gcc"],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
+      }
+    ]
+  }

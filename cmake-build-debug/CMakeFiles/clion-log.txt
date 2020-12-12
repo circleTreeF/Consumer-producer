@@ -1,0 +1,4 @@
+/home/yizirui/Downloads/cmake-3.17.0-Linux-x86_64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /mnt/d/csProject/OSC/cw
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /mnt/d/csProject/OSC/cw/cmake-build-debug
