@@ -1,5 +1,11 @@
 //
 // Created by Yizirui Fang on 2020/12/11.
+/*
+ * Dear Producers and Consumers:
+ *
+ * 你们要乖 爸爸给你们上锁了 你们不要偷偷自己开锁哦
+ */
+
 //
 
 #include <pthread.h>
@@ -18,8 +24,9 @@ typedef struct {
     processNode **queueTail;
     int index;
 } threadArg;
-processNode *workingQueueHead = NULL;
-processNode *workingQueueTail = NULL;
+
+processNode *readyQueueHead = NULL;
+processNode *readyQueueTail = NULL;
 
 #define processData(processNode) ((processChara *) processNode->pData)
 
@@ -30,6 +37,12 @@ int *inBufferThreadCounter = 0;
 double totalResponseTime = 0.0;
 double totalTurnaroundTime = 0.0;
 int processIndex = 0;
+int consumedProcessNumber = 0;
+int consumingProcessNumber = 0;
+int activeConsumer = 0;
+
+pthread_t producerThreads[NUMBER_OF_PRODUCERS];
+pthread_t consumerThreads[NUMBER_OF_CONSUMERS];
 
 void swap(struct element *a, struct element *b);
 
@@ -45,9 +58,6 @@ int main(int argc, char const *argv[]) {
     sem_init(&fullBufferNum, 0, 0);
 
 
-    pthread_t producerThreads[NUMBER_OF_PRODUCERS];
-    pthread_t consumerThreads[NUMBER_OF_CONSUMERS];
-
     int producerIndexArr[NUMBER_OF_PRODUCERS];
     int consumerIndexArr[NUMBER_OF_CONSUMERS];
     for (int producerIndex = 0; producerIndex < NUMBER_OF_PRODUCERS; ++producerIndex) {
@@ -55,10 +65,13 @@ int main(int argc, char const *argv[]) {
         pthread_create(&producerThreads[producerIndex], NULL, producer, (void *) &producerIndexArr[producerIndex]);
     }
     for (int consumerIndex = 0; consumerIndex < NUMBER_OF_CONSUMERS; ++consumerIndex) {
+        activeConsumer++;
         consumerIndexArr[consumerIndex] = consumerIndex;
         pthread_create(&consumerThreads[consumerIndex], NULL, consumer,
                        (void *) &consumerIndexArr[consumerIndex]);
     }
+
+    //TODO: add a lock by pthread_mutex_lock() to solve the mass between consumer and producer
 
     for (int producerIndex = 0; producerIndex < NUMBER_OF_PRODUCERS; ++producerIndex) {
         pthread_join(producerThreads[producerIndex], NULL);
@@ -72,8 +85,7 @@ int main(int argc, char const *argv[]) {
 //    for (processIndex = 0; processIndex < MAX_NUMBER_OF_JOBS; processIndex++) {
 //
 //    }
-
-    return 0;
+    pthread_exit(NULL);
 }
 
 /**
@@ -81,19 +93,37 @@ int main(int argc, char const *argv[]) {
  */
 void *consumer(void *consumerIndex) {
     while (1) {
-        sem_wait(&fullBufferNum);
         sem_wait(&accessSync);
-        if ((workingQueueHead == NULL) && (processIndex == MAX_NUMBER_OF_JOBS)) {
+        if (((consumedProcessNumber + activeConsumer) > MAX_NUMBER_OF_JOBS)) {
             sem_post(&accessSync);
-            sem_post(&emptyBufferNum);
+            int testSem;
+            printf("Consumer sync %d\n", sem_getvalue(&accessSync, &testSem));
+            printf("Consumer full buffer %d\n", sem_getvalue(&fullBufferNum, &testSem));
+            printf("Consumer empty buffer %d\n", sem_getvalue(&emptyBufferNum, &testSem));
+            printf("consumer ends\n");
             break;
         }
+        sem_post(&accessSync);
+
+        sem_wait(&fullBufferNum);
+        sem_wait(&accessSync);
+        consumingProcessNumber++;
+
+
+        processChara *runningProcess = (processChara *) removeFirst(&readyQueueHead, &readyQueueTail);
+        consumedProcessNumber++;
+        sem_post(&accessSync);
+        sem_post(&emptyBufferNum);
+
         struct timeval processStartTime;
         struct timeval processEndTime;
-        processChara *runningProcess = (processChara *) removeFirst(&workingQueueHead, &workingQueueTail);
         runNonPreemptiveJob(runningProcess, &processStartTime, &processEndTime);
+
+
         long int currentResponse = getDifferenceInMilliSeconds(runningProcess->oTimeCreated, processStartTime);
         long int currentTurnaround = getDifferenceInMilliSeconds(runningProcess->oTimeCreated, processEndTime);
+        //TODO:这个accessSync锁可分离成针对多个variable的锁
+        sem_wait(&accessSync);
         totalResponseTime += currentResponse;
         totalTurnaroundTime += currentTurnaround;
         int currentConsumerIndex = *((int *) consumerIndex);
@@ -101,8 +131,9 @@ void *consumer(void *consumerIndex) {
                currentConsumerIndex, runningProcess->iProcessId, runningProcess->iPreviousBurstTime,
                runningProcess->iRemainingBurstTime, currentResponse, currentTurnaround);
         inBufferThreadCounter--;
+//        consumingProcessNumber--;
         sem_post(&accessSync);
-        sem_post(&emptyBufferNum);
+
     }
     return NULL;
 }
@@ -114,11 +145,16 @@ void *producer(void *producerIndex) {
         if (processIndex == MAX_NUMBER_OF_JOBS) {
             sem_post(&accessSync);
             sem_post(&emptyBufferNum);
+//            printf("producer ends\n");
+//            sem_getvalue(&accessSync, &testSem);
+//            printf("sync %d\n", testSem);
+//            sem_getvalue(&fullBufferNum, &testSem);
+//            printf("full buffer %d\n", testSem);
             break;
         }
         int currentProducerIndex = *((int *) producerIndex);
         processChara *newProcess = generateProcess();
-        addLast(newProcess, &workingQueueHead, &workingQueueTail);
+        addLast(newProcess, &readyQueueHead, &readyQueueTail);
         sortProcessesBySJF();
         inBufferThreadCounter++;
         processIndex++;
@@ -131,6 +167,13 @@ void *producer(void *producerIndex) {
     return NULL;
 }
 
+
+//void *consumerWatcher(){
+//    if (consumedProcessNumber == MAX_NUMBER_OF_JOBS){
+//        pthread_cancel
+//    }
+//}
+
 /* Bubble sort the given linked list */
 void sortProcessesBySJF() {
     int swapped;
@@ -138,12 +181,12 @@ void sortProcessesBySJF() {
     processNode *lptr = NULL;
 
     /* Checking for emptyBufferNum list */
-    if (workingQueueHead == NULL)
+    if (readyQueueHead == NULL)
         return;
 
     do {
         swapped = 0;
-        minNode = workingQueueHead;
+        minNode = readyQueueHead;
 
         while (minNode->pNext != lptr) {
             if (((processChara *) (minNode->pData))->iRemainingBurstTime >
