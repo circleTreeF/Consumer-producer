@@ -17,7 +17,9 @@ typedef struct {
     processNode **queueHead;
     processNode **queueTail;
     int index;
-} threadArgs;
+} threadArg;
+processNode *workingQueueHead = NULL;
+processNode *workingQueueTail = NULL;
 
 #define processData(processNode) ((processChara *) processNode->pData)
 
@@ -31,39 +33,41 @@ int processIndex = 0;
 
 void swap(struct element *a, struct element *b);
 
-void sortProcessesBySJF(processNode *start);
+void sortProcessesBySJF();
 
-void *consumer(void *args);
+void *consumer(void *consumerIndex);
 
-void *producer(void *args) ;
+void *producer(void *producerIndex);
 
 int main(int argc, char const *argv[]) {
     sem_init(&emptyBufferNum, 0, MAX_BUFFER_SIZE);
     sem_init(&accessSync, 0, 1);
     sem_init(&fullBufferNum, 0, 0);
-    processNode *workingQueueHead = NULL;
-    processNode *workingQueueTail = NULL;
+
 
     pthread_t producerThreads[NUMBER_OF_PRODUCERS];
     pthread_t consumerThreads[NUMBER_OF_CONSUMERS];
+
+    int producerIndexArr[NUMBER_OF_PRODUCERS];
+    int consumerIndexArr[NUMBER_OF_CONSUMERS];
     for (int producerIndex = 0; producerIndex < NUMBER_OF_PRODUCERS; ++producerIndex) {
-        //TODO: could declare with malloc
-        threadArgs *currentProducerArg;
-        currentProducerArg->queueHead = &workingQueueHead;
-        currentProducerArg->queueTail = &workingQueueTail;
-        currentProducerArg->index = producerIndex;
-        pthread_create(&producerThreads[producerIndex], NULL, (void *(*)(void *)) producer,
-                       (void *) currentProducerArg);
+        producerIndexArr[producerIndex] = producerIndex;
+        pthread_create(&producerThreads[producerIndex], NULL, producer, (void *) &producerIndexArr[producerIndex]);
     }
     for (int consumerIndex = 0; consumerIndex < NUMBER_OF_CONSUMERS; ++consumerIndex) {
-        //TODO: could declare with malloc
-        threadArgs *currentProducerArg;
-        currentProducerArg->queueHead = &workingQueueHead;
-        currentProducerArg->queueTail = &workingQueueTail;
-        currentProducerArg->index = consumerIndex;
-        pthread_create(&consumerThreads[consumerIndex], NULL, (void *(*)(void *)) consumer,
-                       (void *) currentProducerArg);
+        consumerIndexArr[consumerIndex] = consumerIndex;
+        pthread_create(&consumerThreads[consumerIndex], NULL, consumer,
+                       (void *) &consumerIndexArr[consumerIndex]);
     }
+
+    for (int producerIndex = 0; producerIndex < NUMBER_OF_PRODUCERS; ++producerIndex) {
+        pthread_join(producerThreads[producerIndex], NULL);
+    }
+    for (int consumerIndex = 0; consumerIndex < NUMBER_OF_CONSUMERS; ++consumerIndex) {
+        pthread_join(consumerThreads[consumerIndex], NULL);
+    }
+    printf("Average Response Time = %f\n", totalResponseTime / MAX_NUMBER_OF_JOBS);
+    printf("Average Turn Around Time = %f\n", totalTurnaroundTime / MAX_NUMBER_OF_JOBS);
 
 //    for (processIndex = 0; processIndex < MAX_NUMBER_OF_JOBS; processIndex++) {
 //
@@ -75,52 +79,71 @@ int main(int argc, char const *argv[]) {
 /**
  * terminates when MAX_NUMBER_OF_JOBS have been consumed
  */
-void *consumer(void *args) {
-    threadArgs *currentArgs = (threadArgs *) args;
+void *consumer(void *consumerIndex) {
     while (1) {
         sem_wait(&fullBufferNum);
         sem_wait(&accessSync);
+        if ((workingQueueHead == NULL) && (processIndex == MAX_NUMBER_OF_JOBS)) {
+            sem_post(&accessSync);
+            sem_post(&emptyBufferNum);
+            break;
+        }
         struct timeval processStartTime;
         struct timeval processEndTime;
-        processChara *runningProcess = removeFirst(currentArgs->queueHead, currentArgs->queueTail);
+        processChara *runningProcess = (processChara *) removeFirst(&workingQueueHead, &workingQueueTail);
         runNonPreemptiveJob(runningProcess, &processStartTime, &processEndTime);
+        long int currentResponse = getDifferenceInMilliSeconds(runningProcess->oTimeCreated, processStartTime);
+        long int currentTurnaround = getDifferenceInMilliSeconds(runningProcess->oTimeCreated, processEndTime);
+        totalResponseTime += currentResponse;
+        totalTurnaroundTime += currentTurnaround;
+        int currentConsumerIndex = *((int *) consumerIndex);
+        printf("Consumer = %d, Process Id = %d, Previous Burst Time = %d, New Burst Time = %d, Response Time = %ld, Turnaround Time = %ld\n",
+               currentConsumerIndex, runningProcess->iProcessId, runningProcess->iPreviousBurstTime,
+               runningProcess->iRemainingBurstTime, currentResponse, currentTurnaround);
         inBufferThreadCounter--;
         sem_post(&accessSync);
         sem_post(&emptyBufferNum);
     }
+    return NULL;
 }
 
-void *producer(void *args) {
-    threadArgs *currentArgs = (threadArgs *) args;
+void *producer(void *producerIndex) {
     while (1) {
         sem_wait(&emptyBufferNum);
         sem_wait(&accessSync);
+        if (processIndex == MAX_NUMBER_OF_JOBS) {
+            sem_post(&accessSync);
+            sem_post(&emptyBufferNum);
+            break;
+        }
+        int currentProducerIndex = *((int *) producerIndex);
         processChara *newProcess = generateProcess();
-        addLast(newProcess, currentArgs->queueHead, currentArgs->queueTail);
-        sortProcessesBySJF(*(currentArgs->queueHead));
+        addLast(newProcess, &workingQueueHead, &workingQueueTail);
+        sortProcessesBySJF();
         inBufferThreadCounter++;
         processIndex++;
-        printf("Producer = %d, Items Produced = %d, New Process Id = %d, Burst Time = %d", currentArgs->index, processIndex,
+        printf("Producer = %d, Items Produced = %d, New Process Id = %d, Burst Time = %d\n", currentProducerIndex,
+               processIndex,
                newProcess->iProcessId, newProcess->iInitialBurstTime);
         sem_post(&accessSync);
         sem_post(&fullBufferNum);
-
     }
+    return NULL;
 }
 
 /* Bubble sort the given linked list */
-void sortProcessesBySJF(processNode *start) {
+void sortProcessesBySJF() {
     int swapped;
     processNode *minNode;
     processNode *lptr = NULL;
 
     /* Checking for emptyBufferNum list */
-    if (start == NULL)
+    if (workingQueueHead == NULL)
         return;
 
     do {
         swapped = 0;
-        minNode = start;
+        minNode = workingQueueHead;
 
         while (minNode->pNext != lptr) {
             if (((processChara *) (minNode->pData))->iRemainingBurstTime >
