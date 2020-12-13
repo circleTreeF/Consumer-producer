@@ -24,7 +24,7 @@ void processGenerator(processNode **pHead, processNode **pTail);
 
 void swap(processNode *a, processNode *b);
 
-processNode *sortProcessesByPriority(processNode **pHead);
+void sortProcessesByPriority(processNode *pHead);
 
 void
 dispatchSamePriorityProcesses(processNode **readyQueueHead, processNode **readyQueueTail,
@@ -51,7 +51,7 @@ int main(int argc, char const *argv[]) {
     processNode *workingQueueTail = NULL;
     FILE *outFile = fopen("TASK1b.txt", "w+");
     processGenerator(&readyQueueHead, &readyQueueTail);
-    sortProcessesByPriority(&readyQueueHead);
+    sortProcessesByPriority(readyQueueHead);
     printProcessList(readyQueueHead, readyQueueTail, outFile);
     long int totalResponseTime = 0;
     long int totalTurnaroundTime = 0;
@@ -122,18 +122,18 @@ void processGenerator(processNode **pHead, processNode **pTail) {
  * @param pHead
  * @return
  */
-processNode *sortProcessesByPriority(processNode **pHead) {
+void sortProcessesByPriority(processNode *pHead) {
     int swapped, i;
     processNode *currentNode;
     processNode *priorNode = NULL;
 
     /* Checking for empty list */
     if (pHead == NULL)
-        return NULL;
+        return;
 
     do {
         swapped = 0;
-        currentNode = *pHead;
+        currentNode = pHead;
 
         while (currentNode->pNext != priorNode) {
             if (((processChara *) (currentNode->pData))->iPriority >
@@ -238,7 +238,7 @@ printCompeteProcessInSingleSlide(processNode *currentNode, long int *totalRespon
     *totalResponseTime += currentProcessResponseTime;
     *totalTurnaroundTime += currentProcessTurnaroundTime;
     fprintf(outputFile,
-            "Process Id = %d, Previous Burst Time: %d Remaining Burst Time = %d,Response Time = %d Turnaround Time: %d\n",
+            "Process Id = %d, Previous Burst Time: %d Remaining Burst Time = %d,Response Time = %d, Turnaround Time: %d\n",
             processData(currentNode)->iProcessId, processData(currentNode)->iPreviousBurstTime,
             processData(currentNode)->iRemainingBurstTime,
             currentProcessResponseTime,
