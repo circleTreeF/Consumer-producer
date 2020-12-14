@@ -1,6 +1,7 @@
 #include "coursework.h"
 #include "linkedlist.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef struct process processChara;
 typedef struct element processNode;
@@ -38,13 +39,10 @@ int main(int argc, char const *argv[]) {
                 "Process Id = %d, Previous Burst Time = %d, Remaining Burst Time = %d, Response Time = %ld, Turnaround Time = %ld\n",
                 currentProcess->iProcessId, currentProcess->iPreviousBurstTime,
                 currentProcess->iRemainingBurstTime, processResponseTime, processTurnaroundTime);
+
+        free(currentProcess);
         removeFirst(&processesHead, &processTail);
     }
-    //FIXME:the expect: Average response time = 319.100000
-    //Average turn around time = 416.600000
-    //Actual:
-    // Average response time = 319.100006
-    //Average turnaround time = 416.600006
     fprintf(outFile, "Average response time = %f\n", ((double) totalResponseTime) / NUMBER_OF_PROCESSES);
     fprintf(outFile, "Average turn around time = %f\n", ((double) totalTurnaroundTime) / NUMBER_OF_PROCESSES);
     fclose(outFile);
