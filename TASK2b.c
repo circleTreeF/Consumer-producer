@@ -14,15 +14,14 @@ typedef struct element processNode;
 
 #define processData(processNode) ((processChara *) processNode->pData)
 
-processNode *readyQueueHead = NULL;
-processNode *readyQueueTail = NULL;
-//processNode *workingQueueHead = NULL;
-//processNode *workingQueueTail = NULL;
 
 sem_t emptyBufferNum;
 sem_t accessSync;
 sem_t fullBufferNum;
-int *inBufferThreadCounter = 0;
+//the semaphore to sync the variable consumedProcessNumber between consumers, which counts the number of processes been consumed
+//sem_t producerIndexSync;
+sem_t consumedProcessSync;
+
 double totalResponseTime = 0.0;
 double totalTurnaroundTime = 0.0;
 int processIndex = 0;
@@ -33,6 +32,7 @@ pthread_t consumerThreads[NUMBER_OF_CONSUMERS];
 processNode *priorityReadyQueueHeadArray[MAX_PRIORITY];
 processNode *priorityReadyQueueTailArray[MAX_PRIORITY];
 
+
 int consumedProcessNumber = 0;
 int activeConsumer = 0;
 
@@ -42,16 +42,11 @@ void *producer(void *producerIndex);
 
 void *findProcess();
 
-void swap(processNode *a, processNode *b);
-
-void sortProcessesByPriority();
-
-void dispatchSamePriorityProcesses();
-
 int main(int argc, char const *argv[]) {
     sem_init(&emptyBufferNum, 0, MAX_BUFFER_SIZE);
     sem_init(&accessSync, 0, 1);
     sem_init(&fullBufferNum, 0, 0);
+    sem_init(&consumedProcessSync, 0, 1);
 
     for (int index = 0; index < MAX_PRIORITY; ++index) {
         priorityReadyQueueHeadArray[index] = NULL;
@@ -80,66 +75,65 @@ int main(int argc, char const *argv[]) {
     }
     printf("Average Response Time = %f\n", totalResponseTime / MAX_NUMBER_OF_JOBS);
     printf("Average Turn Around Time = %f\n", totalTurnaroundTime / MAX_NUMBER_OF_JOBS);
-    pthread_exit(NULL);
+
+    return 0;
 }
 
 void *producer(void *producerIndex) {
     int currentProducerIndex = *((int *) producerIndex);
     while (1) {
+        /** critical section start*/
         sem_wait(&emptyBufferNum);
         sem_wait(&accessSync);
         if (processIndex == MAX_NUMBER_OF_JOBS) {
             sem_post(&accessSync);
             sem_post(&emptyBufferNum);
-//            printf("producer ends\n");
-//            sem_getvalue(&accessSync, &testSem);
-//            printf("sync %d\n", testSem);
-//            sem_getvalue(&fullBufferNum, &testSem);
-//            printf("full buffer %d\n", testSem);
             break;
         }
 
         processChara *newProcess = generateProcess();
 
-        addLast(newProcess, &priorityReadyQueueHeadArray[newProcess->iPriority ],
-                &priorityReadyQueueTailArray[newProcess->iPriority ]);
-//        sortProcessesByPriority();
-//        inBufferThreadCounter++;
+        addLast(newProcess, &priorityReadyQueueHeadArray[newProcess->iPriority],
+                &priorityReadyQueueTailArray[newProcess->iPriority]);
         processIndex++;
         printf("Producer = %d, Items Produced = %d, New Process Id = %d, Burst Time = %d\n", currentProducerIndex,
                processIndex,
                newProcess->iProcessId, newProcess->iInitialBurstTime);
         sem_post(&accessSync);
         sem_post(&fullBufferNum);
+        /** critical section ends*/
     }
-    pthread_exit(NULL);
+
+    return NULL;
 }
 
 
 void *consumer(void *consumerIndex) {
     int currentConsumerIndex = *((int *) consumerIndex);
     while (1) {
-        sem_wait(&fullBufferNum);
-        sem_wait(&accessSync);
-        if (((consumedProcessNumber + activeConsumer) > MAX_NUMBER_OF_JOBS)) {
-            sem_post(&accessSync);
-            sem_post(&fullBufferNum);
-//            int testSem;
-//            printf("Consumer sync %d\n", sem_getvalue(&accessSync, &testSem));
-//            printf("Consumer full buffer %d\n", sem_getvalue(&fullBufferNum, &testSem));
-//            printf("Consumer empty buffer %d\n", sem_getvalue(&emptyBufferNum, &testSem));
-//            printf("consumer ends\n");
+        /** critical section to check if all process consumed start*/
+        sem_wait(&consumedProcessSync);
+        if (((consumedProcessNumber + activeConsumer) >= MAX_NUMBER_OF_JOBS)) {
+            activeConsumer--;
+            sem_post(&consumedProcessSync);
             break;
         }
+        sem_post(&consumedProcessSync);
+        /** critical section to check if all process consumed ends*/
+        /** critical section for add process into the buffer, round robin and print the process information starts*/
+        sem_wait(&fullBufferNum);
+        sem_wait(&accessSync);
+
         processChara *runningProcess = (processChara *) findProcess();
         sem_post(&accessSync);
-//        sem_post(&emptyBufferNum);
+        /** critical section for add process into the buffer ends*/
+
 
 
         struct timeval processStartTime;
         struct timeval processEndTime;
         runPreemptiveJob(runningProcess, &processStartTime, &processEndTime);
-
+        /** critical section for round robin and print the process information starts*/
         sem_wait(&accessSync);
         //if the process just start
         if (runningProcess->iPreviousBurstTime == runningProcess->iInitialBurstTime) {
@@ -157,8 +151,10 @@ void *consumer(void *consumerIndex) {
                        currentConsumerIndex, runningProcess->iProcessId, runningProcess->iPriority,
                        runningProcess->iPreviousBurstTime, runningProcess->iRemainingBurstTime,
                        currentProcessResponseTime, currentProcessTurnaroundTime);
+                free(runningProcess);
                 sem_post(&accessSync);
                 sem_post(&emptyBufferNum);
+                /** critical section for round robin and print the process information ends, while the process is fully executed*/
             } else {
                 printf("Consumer = %d, Process Id = %d, Priority = %d, Previous Burst Time = %d, New Burst Time = %d, Response Time = %ld\n",
                        currentConsumerIndex, runningProcess->iProcessId, runningProcess->iPriority,
@@ -170,6 +166,7 @@ void *consumer(void *consumerIndex) {
                 sem_post(&accessSync);
                 //TODO:有可能consume的时候有produce了新的 就会超buffer
                 sem_post(&fullBufferNum);
+                /** critical section for round robin and print the process information ends, while the process is not fully executed*/
             }
         } else {
             //check if the process become finished
@@ -182,78 +179,36 @@ void *consumer(void *consumerIndex) {
                        runningProcess->iPreviousBurstTime, runningProcess->iRemainingBurstTime,
                        currentProcessTurnaroundTime);
                 consumedProcessNumber++;
+                free(runningProcess);
                 sem_post(&accessSync);
                 sem_post(&emptyBufferNum);
+                /** critical section for round robin and print the process information ends, while the process is fully executed*/
             } else {
                 printf("Consumer = %d, Process Id = %d, Priority = %d, Previous Burst Time = %d, New Burst Time = %d\n",
                        currentConsumerIndex, runningProcess->iProcessId, runningProcess->iPriority,
                        runningProcess->iPreviousBurstTime, runningProcess->iRemainingBurstTime);
-                addLast(runningProcess, &priorityReadyQueueHeadArray[runningProcess->iPriority ],
-                        &priorityReadyQueueTailArray[runningProcess->iPriority ]);
+                addLast(runningProcess, &priorityReadyQueueHeadArray[runningProcess->iPriority],
+                        &priorityReadyQueueTailArray[runningProcess->iPriority]);
                 sem_post(&accessSync);
                 sem_post(&fullBufferNum);
+                /** critical section for round robin and print the process information ends, while the process is not fully executed*/
             }
         }
 
     }
-    pthread_exit(NULL);
+    return NULL;
 }
 
 
-//TODO: check if -1 is necessary
+/**
+ * find the process in the buffer with the smallest priority
+ * @return
+ */
 void *findProcess() {
     for (int priorityIndex = 0; priorityIndex < MAX_PRIORITY; ++priorityIndex) {
         if (priorityReadyQueueHeadArray[priorityIndex] != NULL) {
-            return removeFirst(&priorityReadyQueueHeadArray[priorityIndex ],
+            return removeFirst(&priorityReadyQueueHeadArray[priorityIndex],
                                &priorityReadyQueueTailArray[priorityIndex]);
         }
     }
 }
-
-
-//void sortProcessesByPriority() {
-//    int swapped, i;
-//    processNode *currentNode;
-//    processNode *priorNode = NULL;
-//
-//    /* Checking for empty list */
-//    if (readyQueueHead == NULL)
-//        return;
-//
-//    do {
-//        swapped = 0;
-//        currentNode = readyQueueHead;
-//
-//        while (currentNode->pNext != priorNode) {
-//            if (((processChara *) (currentNode->pData))->iPriority >
-//                ((processChara *) (currentNode->pNext->pData))->iPriority) {
-//                swap(currentNode, currentNode->pNext);
-//                swapped = 1;
-//            }
-//            currentNode = currentNode->pNext;
-//        }
-//        priorNode = currentNode;
-//    } while (swapped);
-//}
-//
-///* function to swap data of two nodes a and b*/
-//void swap(struct element *a, struct element *b) {
-//    processNode *tempNode = a->pData;
-//    a->pData = b->pData;
-//    b->pData = tempNode;
-//}
-//
-//void dispatchSamePriorityProcesses() {
-//    processNode *currentNode = readyQueueHead;
-//    int currentPriority = processData(currentNode)->iPriority;
-//    while (processData(readyQueueHead)->iPriority != currentPriority) {
-////        if (((processChara *) currentNode->pData)->iPriority == currentPriority) {
-//            //addLast(processData(currentNode), workingQueueHead, workingQueueTail);
-//            addLast(removeFirst(&readyQueueHead, &readyQueueTail), &workingQueueHead, &workingQueueTail);
-////            currentNode = currentNode->pNext;
-////            removeFirst(readyQueueHead, readyQueueTail);
-////        } else {
-////            return;
-////        }
-//    }
-//}

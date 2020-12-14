@@ -19,11 +19,6 @@
 typedef struct process processChara;
 typedef struct element processNode;
 
-typedef struct {
-    processNode **queueHead;
-    processNode **queueTail;
-    int index;
-} threadArg;
 
 processNode *readyQueueHead = NULL;
 processNode *readyQueueTail = NULL;
@@ -33,20 +28,18 @@ processNode *readyQueueTail = NULL;
 sem_t emptyBufferNum;
 sem_t accessSync;
 sem_t fullBufferNum;
-int *inBufferThreadCounter = 0;
+
+int isProducerDone = 0;
+
 double totalResponseTime = 0.0;
 double totalTurnaroundTime = 0.0;
 int processIndex = 0;
 int consumedProcessNumber = 0;
-int consumingProcessNumber = 0;
+
 int activeConsumer = 0;
 
 pthread_t producerThreads[NUMBER_OF_PRODUCERS];
 pthread_t consumerThreads[NUMBER_OF_CONSUMERS];
-
-void swap(struct element *a, struct element *b);
-
-void sortProcessesBySJF();
 
 void *consumer(void *consumerIndex);
 
@@ -73,8 +66,6 @@ int main(int argc, char const *argv[]) {
                        (void *) &consumerIndexArr[consumerIndex]);
     }
 
-    //TODO: add a lock by pthread_mutex_lock() to solve the mass between consumer and producer
-
     for (int producerIndex = 0; producerIndex < NUMBER_OF_PRODUCERS; ++producerIndex) {
         pthread_join(producerThreads[producerIndex], NULL);
     }
@@ -84,10 +75,9 @@ int main(int argc, char const *argv[]) {
     printf("Average Response Time = %f\n", totalResponseTime / MAX_NUMBER_OF_JOBS);
     printf("Average Turn Around Time = %f\n", totalTurnaroundTime / MAX_NUMBER_OF_JOBS);
 
-//    for (processIndex = 0; processIndex < MAX_NUMBER_OF_JOBS; processIndex++) {
-//
-//    }
-    pthread_exit(NULL);
+    free(readyQueueHead);
+    free(readyQueueTail);
+    return 0;
 }
 
 /**
@@ -96,80 +86,76 @@ int main(int argc, char const *argv[]) {
 void *consumer(void *consumerIndex) {
     int currentConsumerIndex = *((int *) consumerIndex);
     while (1) {
-        sem_wait(&fullBufferNum);
+        /** critical section to check if all process consumed starts*/
         sem_wait(&accessSync);
-        //TODO: can add a terminate globale vairable to terminate
         if (((consumedProcessNumber + activeConsumer) > MAX_NUMBER_OF_JOBS)) {
+            activeConsumer--;
             sem_post(&accessSync);
-            sem_post(&fullBufferNum);
             break;
         }
-//        sem_post(&accessSync);
-
-
-//        sem_wait(&accessSync);
-//        consumingProcessNumber++;
-
+        sem_post(&accessSync);
+        /** critical section to check if all process consumed ends*/
+        /** critical section to remove one process from the buffer starts*/
+        sem_wait(&fullBufferNum);
+        sem_wait(&accessSync);
 
         processChara *runningProcess = (processChara *) removeFirst(&readyQueueHead, &readyQueueTail);
         consumedProcessNumber++;
-//        inBufferThreadCounter--;
         sem_post(&accessSync);
-
+        /** critical section to remove one process from the buffer ends*/
 
         struct timeval processStartTime;
         struct timeval processEndTime;
         runNonPreemptiveJob(runningProcess, &processStartTime, &processEndTime);
-        free(runningProcess);
+
         long int currentResponse = getDifferenceInMilliSeconds(runningProcess->oTimeCreated, processStartTime);
         long int currentTurnaround = getDifferenceInMilliSeconds(runningProcess->oTimeCreated, processEndTime);
-        //TODO:这个accessSync锁可分离成针对多个variable的锁
+        /** critical section to update the shared variables, total response time and turn around time starts*/
         sem_wait(&accessSync);
         totalResponseTime += (double) currentResponse;
         totalTurnaroundTime += (double) currentTurnaround;
-
-
-//        consumingProcessNumber--;
-        sem_post(&accessSync);
-        //TODO: 之前144没有被提前consume是因为emptyBufferNum在runNonPreemtiveJob之前就post解锁了 produce就能跑了
-        sem_post(&emptyBufferNum);
         printf("Consumer = %d, Process Id = %d, Previous Burst Time = %d, New Burst Time = %d, Response Time = %ld, Turnaround Time = %ld\n",
                currentConsumerIndex, runningProcess->iProcessId, runningProcess->iPreviousBurstTime,
                runningProcess->iRemainingBurstTime, currentResponse, currentTurnaround);
+        sem_post(&accessSync);
+        sem_post(&emptyBufferNum);
+        /**critical section to pdate the shared variables, total response time and turn around time ends*/
 
+        free(runningProcess);
     }
-    pthread_exit(NULL);
+    return NULL;
 }
 
 void *producer(void *producerIndex) {
     int currentProducerIndex = *((int *) producerIndex);
     while (1) {
+        /** critical section start*/
         sem_wait(&emptyBufferNum);
-        processChara *newProcess = generateProcess();
         sem_wait(&accessSync);
-        if (processIndex == MAX_NUMBER_OF_JOBS) {
+        //check if the producers have produced all processes as required
+        if (isProducerDone == 1) {
             sem_post(&accessSync);
-            sem_post(&emptyBufferNum);
-//            printf("producer ends\n");
-//            sem_getvalue(&accessSync, &testSem);
-//            printf("sync %d\n", testSem);
-//            sem_getvalue(&fullBufferNum, &testSem);
-//            printf("full buffer %d\n", testSem);
             break;
         }
-
+        //generate the new process and insert to the buffer
+        processChara *newProcess = generateProcess();
         insertToQueue(newProcess);
-//        addLast(newProcess, &readyQueueHead, &readyQueueTail);
-//        sortProcessesBySJF();
-//        inBufferThreadCounter++;
         processIndex++;
         printf("Producer = %d, Items Produced = %d, New Process Id = %d, Burst Time = %d\n", currentProducerIndex,
                processIndex,
                newProcess->iProcessId, newProcess->iInitialBurstTime);
+        //when the producers have produced all processes as required, set the variable to 1 to remain other process to terminate
+        if (processIndex >= MAX_NUMBER_OF_JOBS) {
+            isProducerDone = 1;
+            sem_post(&accessSync);
+            sem_post(&fullBufferNum);
+            break;
+        }
         sem_post(&accessSync);
         sem_post(&fullBufferNum);
+        /** critical section ends*/
     }
-    pthread_exit(NULL);
+    return NULL;
 }
 
 
@@ -179,6 +165,10 @@ void *producer(void *producerIndex) {
  */
 void insertToQueue(processChara *newProcess) {
     processNode *pNewElement = (processNode *) malloc(sizeof(processNode));
+    if (pNewElement == NULL) {
+        printf("Malloc Failed\n");
+        exit(-1);
+    }
     pNewElement->pData = (void *) newProcess;
     pNewElement->pNext = NULL;
 
@@ -203,7 +193,7 @@ void insertToQueue(processChara *newProcess) {
             pNewElement->pNext = NULL;
             readyQueueTail->pNext = pNewElement;
             readyQueueTail = pNewElement;
-        } else{
+        } else {
             //the current is in the body of the ready queue
             pNewElement->pNext = currentElement->pNext;
             currentElement->pNext = pNewElement;

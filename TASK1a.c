@@ -24,17 +24,20 @@ int main(int argc, char const *argv[]) {
     int completedProcess = 0;
     long int totalResponseTime = 0;
     long int totalTurnaroundTime = 0;
+    //run the process in the sorted linked list till the NUMBER_OF_PROCESSES reaches
     while (completedProcess < NUMBER_OF_PROCESSES) {
         processNode *currentNode = processesHead;
         processChara *currentProcess = (processChara *) currentNode->pData;
         struct timeval processStartTime;
         struct timeval processEndTime;
         runNonPreemptiveJob((processChara *) currentProcess, &processStartTime, &processEndTime);
+        //count the response time and turn around time
         long int processResponseTime = getDifferenceInMilliSeconds(currentProcess->oTimeCreated, processStartTime);
         long int processTurnaroundTime = getDifferenceInMilliSeconds(currentProcess->oTimeCreated, processEndTime);
         totalResponseTime += processResponseTime;
         totalTurnaroundTime += processTurnaroundTime;
         completedProcess++;
+        //print the information into the file outFile
         fprintf(outFile,
                 "Process Id = %d, Previous Burst Time = %d, Remaining Burst Time = %d, Response Time = %ld, Turnaround Time = %ld\n",
                 currentProcess->iProcessId, currentProcess->iPreviousBurstTime,
@@ -62,11 +65,13 @@ void processGenerator(processNode **pHead, processNode **pTail) {
 }
 
 
-/* Bubble sort the given linked list */
+/**
+ * Bubble sort to sort the given linked list in the burst time increasing order
+ * */
 void sortProcessesBySJF(processNode *start) {
     int swapped;
     processNode *minNode;
-    processNode *lptr = NULL;
+    processNode *innerLoopNode = NULL;
 
     /* Checking for empty list */
     if (start == NULL)
@@ -76,7 +81,7 @@ void sortProcessesBySJF(processNode *start) {
         swapped = 0;
         minNode = start;
 
-        while (minNode->pNext != lptr) {
+        while (minNode->pNext != innerLoopNode) {
             if (((processChara *) (minNode->pData))->iRemainingBurstTime >
                 ((processChara *) (minNode->pNext->pData))->iRemainingBurstTime) {
                 swap(minNode, minNode->pNext);
@@ -84,11 +89,13 @@ void sortProcessesBySJF(processNode *start) {
             }
             minNode = minNode->pNext;
         }
-        lptr = minNode;
+        innerLoopNode = minNode;
     } while (swapped);
 }
 
-/* function to swap data of two nodes a and b*/
+/**
+ * swap the data of two nodes a and b
+ */
 void swap(struct element *a, struct element *b) {
     processNode *tempNode = a->pData;
     a->pData = b->pData;
