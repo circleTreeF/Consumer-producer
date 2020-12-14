@@ -42,7 +42,7 @@ int main(int argc, char const *argv[]) {
                 "Process Id = %d, Previous Burst Time = %d, Remaining Burst Time = %d, Response Time = %ld, Turnaround Time = %ld\n",
                 currentProcess->iProcessId, currentProcess->iPreviousBurstTime,
                 currentProcess->iRemainingBurstTime, processResponseTime, processTurnaroundTime);
-
+        //free the process stored in the linked list node
         free(currentProcess);
         removeFirst(&processesHead, &processTail);
     }
@@ -52,7 +52,7 @@ int main(int argc, char const *argv[]) {
     return 0;
 }
 
-/*
+/**
  * Generate the pre-defined amount, NUMBER_OF_PROCESSES of processes
  */
 void processGenerator(processNode **pHead, processNode **pTail) {

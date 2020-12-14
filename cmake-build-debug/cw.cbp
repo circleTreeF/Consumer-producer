@@ -80,7 +80,7 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/mnt/d/csProject/OSC/cw/TASK2aDebug.c">
+		<Unit filename="/mnt/d/csProject/OSC/cw/TASK1b.c">
 			<Option target="cw"/>
 		</Unit>
 		<Unit filename="/mnt/d/csProject/OSC/cw/coursework.c">

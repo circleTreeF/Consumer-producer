@@ -7,6 +7,9 @@ include_directories(.)
 add_executable(cw
         coursework.c linkedlist.c coursework.h linkedlist.h
         #        TASK1a.c
+        TASK1b.c
         # TASK1bDebug.c
         #task1bFprintf.c
-        TASK2aDebug.c)
+#        TASK2aDebug.c
+#        TASK2b.c
+        )

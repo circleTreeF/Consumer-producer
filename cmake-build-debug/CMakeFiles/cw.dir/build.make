@@ -100,31 +100,31 @@ CMakeFiles/cw.dir/linkedlist.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/cw.dir/linkedlist.c.s"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /mnt/d/csProject/OSC/cw/linkedlist.c -o CMakeFiles/cw.dir/linkedlist.c.s
 
-CMakeFiles/cw.dir/TASK2aDebug.c.o: CMakeFiles/cw.dir/flags.make
-CMakeFiles/cw.dir/TASK2aDebug.c.o: ../TASK2aDebug.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/mnt/d/csProject/OSC/cw/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/cw.dir/TASK2aDebug.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/cw.dir/TASK2aDebug.c.o   -c /mnt/d/csProject/OSC/cw/TASK2aDebug.c
+CMakeFiles/cw.dir/TASK1b.c.o: CMakeFiles/cw.dir/flags.make
+CMakeFiles/cw.dir/TASK1b.c.o: ../TASK1b.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/mnt/d/csProject/OSC/cw/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/cw.dir/TASK1b.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/cw.dir/TASK1b.c.o   -c /mnt/d/csProject/OSC/cw/TASK1b.c
 
-CMakeFiles/cw.dir/TASK2aDebug.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/cw.dir/TASK2aDebug.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /mnt/d/csProject/OSC/cw/TASK2aDebug.c > CMakeFiles/cw.dir/TASK2aDebug.c.i
+CMakeFiles/cw.dir/TASK1b.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/cw.dir/TASK1b.c.i"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /mnt/d/csProject/OSC/cw/TASK1b.c > CMakeFiles/cw.dir/TASK1b.c.i
 
-CMakeFiles/cw.dir/TASK2aDebug.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/cw.dir/TASK2aDebug.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /mnt/d/csProject/OSC/cw/TASK2aDebug.c -o CMakeFiles/cw.dir/TASK2aDebug.c.s
+CMakeFiles/cw.dir/TASK1b.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/cw.dir/TASK1b.c.s"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /mnt/d/csProject/OSC/cw/TASK1b.c -o CMakeFiles/cw.dir/TASK1b.c.s
 
 # Object files for target cw
 cw_OBJECTS = \
 "CMakeFiles/cw.dir/coursework.c.o" \
 "CMakeFiles/cw.dir/linkedlist.c.o" \
-"CMakeFiles/cw.dir/TASK2aDebug.c.o"
+"CMakeFiles/cw.dir/TASK1b.c.o"
 
 # External object files for target cw
 cw_EXTERNAL_OBJECTS =
 
 cw: CMakeFiles/cw.dir/coursework.c.o
 cw: CMakeFiles/cw.dir/linkedlist.c.o
-cw: CMakeFiles/cw.dir/TASK2aDebug.c.o
+cw: CMakeFiles/cw.dir/TASK1b.c.o
 cw: CMakeFiles/cw.dir/build.make
 cw: CMakeFiles/cw.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/mnt/d/csProject/OSC/cw/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking C executable cw"

@@ -243,9 +243,14 @@ void printCompleteProcess(processNode *currentNode, long int *totalTurnaroundTim
             processData(currentNode)->iPreviousBurstTime,
             processData(currentNode)->iRemainingBurstTime, currentProcessTurnaroundTime);
 }
-
+/**
+ * print the information when the processes are juat started but not completely executed
+ * @param currentNode
+ * @param totalResponseTime
+ * @param onProcessStart
+ * @param outputFile
+ */
 void printStartedProcess(processNode *currentNode, long int *totalResponseTime, struct timeval onProcessStart, FILE *outputFile) {
-    //FIXME: wrong response time, wrong in onProcessStart
     long int currentProcessResponseTime = getDifferenceInMilliSeconds(
             processData(currentNode)->oTimeCreated,
             onProcessStart);
@@ -257,6 +262,14 @@ void printStartedProcess(processNode *currentNode, long int *totalResponseTime, 
             currentProcessResponseTime);
 }
 
+/**
+ * print information when the processes are just started and completely executed in single executed
+ * @param currentNode
+ * @param totalResponseTime
+ * @param totalTurnaroundTime
+ * @param onProcessStart
+ * @param outputFile
+ */
 void
 printCompeteProcessInSingleSlide(processNode *currentNode, long int *totalResponseTime, long int *totalTurnaroundTime,
                                  struct timeval onProcessStart, FILE *outputFile) {
@@ -275,6 +288,11 @@ printCompeteProcessInSingleSlide(processNode *currentNode, long int *totalRespon
             currentProcessTurnaroundTime);
 }
 
+/**
+ * print information when the processes are started and not completely executed
+ * @param currentNode
+ * @param outputFile
+ */
 void printRunningProcess(processNode *currentNode, FILE *outputFile) {
     fprintf(outputFile,"Process Id = %d, Priority = %d, Previous Burst Time = %d, Remaining Burst Time = %d\n",
            processData(currentNode)->iProcessId, processData(currentNode)->iPriority,

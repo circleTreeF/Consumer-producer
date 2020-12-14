@@ -74,7 +74,7 @@ int main(int argc, char const *argv[]) {
     }
     printf("Average Response Time = %f\n", totalResponseTime / MAX_NUMBER_OF_JOBS);
     printf("Average Turn Around Time = %f\n", totalTurnaroundTime / MAX_NUMBER_OF_JOBS);
-
+    //release the memory of the head and tail of the buffer linked list
     free(readyQueueHead);
     free(readyQueueTail);
     return 0;
@@ -120,7 +120,7 @@ void *consumer(void *consumerIndex) {
         sem_post(&accessSync);
         sem_post(&emptyBufferNum);
         /**critical section to pdate the shared variables, total response time and turn around time ends*/
-
+        //release the memory of running process stored in the data section of the node of the linked list
         free(runningProcess);
     }
     return NULL;

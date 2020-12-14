@@ -16,10 +16,24 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="aiLabNo2 (20b9dba2-7464-4bca-b92f-603819f5cd55)">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="cslinux">
         <serverdata>
           <mappings>
             <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="cslinux (6265182d-b9fa-42b8-bcae-90de42dd923e)">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

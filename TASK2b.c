@@ -18,8 +18,9 @@ typedef struct element processNode;
 sem_t emptyBufferNum;
 sem_t accessSync;
 sem_t fullBufferNum;
-//the semaphore to sync the variable consumedProcessNumber between consumers, which counts the number of processes been consumed
-//sem_t producerIndexSync;
+/*
+ * the semaphore to sync the variable consumedProcessNumber between consumers, which counts the number of processes been consumed
+*/
 sem_t consumedProcessSync;
 
 double totalResponseTime = 0.0;
@@ -151,6 +152,7 @@ void *consumer(void *consumerIndex) {
                        currentConsumerIndex, runningProcess->iProcessId, runningProcess->iPriority,
                        runningProcess->iPreviousBurstTime, runningProcess->iRemainingBurstTime,
                        currentProcessResponseTime, currentProcessTurnaroundTime);
+                //release the memory of running process stored in the data section of the node of the linked list
                 free(runningProcess);
                 sem_post(&accessSync);
                 sem_post(&emptyBufferNum);
@@ -164,7 +166,6 @@ void *consumer(void *consumerIndex) {
                 addLast(runningProcess, &priorityReadyQueueHeadArray[runningProcess->iPriority],
                         &priorityReadyQueueTailArray[runningProcess->iPriority]);
                 sem_post(&accessSync);
-                //TODO:有可能consume的时候有produce了新的 就会超buffer
                 sem_post(&fullBufferNum);
                 /** critical section for round robin and print the process information ends, while the process is not fully executed*/
             }
@@ -179,6 +180,7 @@ void *consumer(void *consumerIndex) {
                        runningProcess->iPreviousBurstTime, runningProcess->iRemainingBurstTime,
                        currentProcessTurnaroundTime);
                 consumedProcessNumber++;
+                //release the memory of running process stored in the data section of the node of the linked list
                 free(runningProcess);
                 sem_post(&accessSync);
                 sem_post(&emptyBufferNum);

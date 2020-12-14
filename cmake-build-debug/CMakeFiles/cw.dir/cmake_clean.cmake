@@ -1,5 +1,5 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/cw.dir/TASK2aDebug.c.o"
+  "CMakeFiles/cw.dir/TASK1b.c.o"
   "CMakeFiles/cw.dir/coursework.c.o"
   "CMakeFiles/cw.dir/linkedlist.c.o"
   "cw"

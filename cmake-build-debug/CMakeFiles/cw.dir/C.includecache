@@ -6,16 +6,12 @@
 
 #IncludeRegexTransform: 
 
-/mnt/d/csProject/OSC/cw/TASK2aDebug.c
-pthread.h
--
+/mnt/d/csProject/OSC/cw/TASK1b.c
 coursework.h
 /mnt/d/csProject/OSC/cw/coursework.h
 linkedlist.h
 /mnt/d/csProject/OSC/cw/linkedlist.h
 stdio.h
--
-semaphore.h
 -
 stdlib.h
 -

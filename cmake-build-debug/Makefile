@@ -140,32 +140,32 @@ cw/fast:
 	$(MAKE) -f CMakeFiles/cw.dir/build.make CMakeFiles/cw.dir/build
 .PHONY : cw/fast
 
-TASK2aDebug.o: TASK2aDebug.c.o
+TASK1b.o: TASK1b.c.o
 
-.PHONY : TASK2aDebug.o
+.PHONY : TASK1b.o
 
 # target to build an object file
-TASK2aDebug.c.o:
-	$(MAKE) -f CMakeFiles/cw.dir/build.make CMakeFiles/cw.dir/TASK2aDebug.c.o
-.PHONY : TASK2aDebug.c.o
+TASK1b.c.o:
+	$(MAKE) -f CMakeFiles/cw.dir/build.make CMakeFiles/cw.dir/TASK1b.c.o
+.PHONY : TASK1b.c.o
 
-TASK2aDebug.i: TASK2aDebug.c.i
+TASK1b.i: TASK1b.c.i
 
-.PHONY : TASK2aDebug.i
+.PHONY : TASK1b.i
 
 # target to preprocess a source file
-TASK2aDebug.c.i:
-	$(MAKE) -f CMakeFiles/cw.dir/build.make CMakeFiles/cw.dir/TASK2aDebug.c.i
-.PHONY : TASK2aDebug.c.i
+TASK1b.c.i:
+	$(MAKE) -f CMakeFiles/cw.dir/build.make CMakeFiles/cw.dir/TASK1b.c.i
+.PHONY : TASK1b.c.i
 
-TASK2aDebug.s: TASK2aDebug.c.s
+TASK1b.s: TASK1b.c.s
 
-.PHONY : TASK2aDebug.s
+.PHONY : TASK1b.s
 
 # target to generate assembly for a file
-TASK2aDebug.c.s:
-	$(MAKE) -f CMakeFiles/cw.dir/build.make CMakeFiles/cw.dir/TASK2aDebug.c.s
-.PHONY : TASK2aDebug.c.s
+TASK1b.c.s:
+	$(MAKE) -f CMakeFiles/cw.dir/build.make CMakeFiles/cw.dir/TASK1b.c.s
+.PHONY : TASK1b.c.s
 
 coursework.o: coursework.c.o
 
@@ -230,9 +230,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... cw"
-	@echo "... TASK2aDebug.o"
-	@echo "... TASK2aDebug.i"
-	@echo "... TASK2aDebug.s"
+	@echo "... TASK1b.o"
+	@echo "... TASK1b.i"
+	@echo "... TASK1b.s"
 	@echo "... coursework.o"
 	@echo "... coursework.i"
 	@echo "... coursework.s"
