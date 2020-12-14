@@ -52,6 +52,8 @@ void *consumer(void *consumerIndex);
 
 void *producer(void *producerIndex);
 
+void insertToQueue(processChara *newProcess);
+
 int main(int argc, char const *argv[]) {
     sem_init(&emptyBufferNum, 0, MAX_BUFFER_SIZE);
     sem_init(&accessSync, 0, 1);
@@ -100,11 +102,6 @@ void *consumer(void *consumerIndex) {
         if (((consumedProcessNumber + activeConsumer) > MAX_NUMBER_OF_JOBS)) {
             sem_post(&accessSync);
             sem_post(&fullBufferNum);
-//            int testSem;
-//            printf("Consumer sync %d\n", sem_getvalue(&accessSync, &testSem));
-//            printf("Consumer full buffer %d\n", sem_getvalue(&fullBufferNum, &testSem));
-//            printf("Consumer empty buffer %d\n", sem_getvalue(&emptyBufferNum, &testSem));
-//            printf("consumer ends\n");
             break;
         }
 //        sem_post(&accessSync);
@@ -123,7 +120,7 @@ void *consumer(void *consumerIndex) {
         struct timeval processStartTime;
         struct timeval processEndTime;
         runNonPreemptiveJob(runningProcess, &processStartTime, &processEndTime);
-
+        free(runningProcess);
         long int currentResponse = getDifferenceInMilliSeconds(runningProcess->oTimeCreated, processStartTime);
         long int currentTurnaround = getDifferenceInMilliSeconds(runningProcess->oTimeCreated, processEndTime);
         //TODO:这个accessSync锁可分离成针对多个variable的锁
@@ -161,9 +158,9 @@ void *producer(void *producerIndex) {
             break;
         }
 
-
-        addLast(newProcess, &readyQueueHead, &readyQueueTail);
-        sortProcessesBySJF();
+        insertToQueue(newProcess);
+//        addLast(newProcess, &readyQueueHead, &readyQueueTail);
+//        sortProcessesBySJF();
 //        inBufferThreadCounter++;
         processIndex++;
         printf("Producer = %d, Items Produced = %d, New Process Id = %d, Burst Time = %d\n", currentProducerIndex,
@@ -176,42 +173,41 @@ void *producer(void *producerIndex) {
 }
 
 
-//void *consumerWatcher(){
-//    if (consumedProcessNumber == MAX_NUMBER_OF_JOBS){
-//        pthread_cancel
-//    }
-//}
+/**
+ * insert the new process into the ready queue in the increasing order of burst time
+ * @param newProcess
+ */
+void insertToQueue(processChara *newProcess) {
+    processNode *pNewElement = (processNode *) malloc(sizeof(processNode));
+    pNewElement->pData = (void *) newProcess;
+    pNewElement->pNext = NULL;
 
-/* Bubble sort the given linked list */
-void sortProcessesBySJF() {
-    int swapped;
-    processNode *minNode;
-    processNode *lptr = NULL;
-
-    /* Checking for emptyBufferNum list */
-    if (readyQueueHead == NULL)
-        return;
-
-    do {
-        swapped = 0;
-        minNode = readyQueueHead;
-
-        while (minNode->pNext != lptr) {
-            if (((processChara *) (minNode->pData))->iRemainingBurstTime >
-                ((processChara *) (minNode->pNext->pData))->iRemainingBurstTime) {
-                swap(minNode, minNode->pNext);
-                swapped = 1;
+    //check if the ready queue is empty
+    if (readyQueueHead == NULL) {
+        readyQueueTail = readyQueueHead = pNewElement;
+    } else {
+        processNode *currentElement = readyQueueHead;
+        /*
+         * traverse the linked list to find the node whose initial burst time of the pData is less than the initial burst time of the new process
+         * while the pData of next node of this node has a greater initial burst time
+         */
+        while (currentElement->pNext != NULL) {
+            if ((newProcess->iInitialBurstTime >= processData(currentElement)->iInitialBurstTime) &&
+                (newProcess->iInitialBurstTime <= processData(currentElement->pNext)->iInitialBurstTime)) {
+                break;
             }
-            minNode = minNode->pNext;
+            currentElement = currentElement->pNext;
         }
-        lptr = minNode;
-    } while (swapped);
+        //if the currentElement is the last element in the ready queue
+        if (currentElement == readyQueueTail) {
+            pNewElement->pNext = NULL;
+            readyQueueTail->pNext = pNewElement;
+            readyQueueTail = pNewElement;
+        } else{
+            //the current is in the body of the ready queue
+            pNewElement->pNext = currentElement->pNext;
+            currentElement->pNext = pNewElement;
+        }
+    }
 }
 
-
-/* function to swap data of two nodes a and b*/
-void swap(struct element *a, struct element *b) {
-    processNode *tempNode = a->pData;
-    a->pData = b->pData;
-    b->pData = tempNode;
-}
